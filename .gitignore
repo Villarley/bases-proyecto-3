@@ -1,0 +1,29 @@
+# Dependencias
+node_modules
+.pnp
+.pnp.js
+
+# Compilación
+.next
+out
+dist
+build
+.turbo
+*.tsbuildinfo
+
+# Entorno
+.env
+.env.local
+.env.*.local
+
+# IDE
+.DS_Store
+*.log
+.idea
+.vscode
+
+# Pruebas
+coverage
+
+# Varios
+*.pem

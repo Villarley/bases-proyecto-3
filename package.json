@@ -1,0 +1,20 @@
+{
+  "name": "planilla-obrera",
+  "version": "0.0.1",
+  "private": true,
+  "packageManager": "npm@11.6.2",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "db:up": "docker compose -f db/docker/docker-compose.yml up -d",
+    "db:down": "docker compose -f db/docker/docker-compose.yml down",
+    "db:logs": "docker compose -f db/docker/docker-compose.yml logs -f"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.4"
+  }
+}
