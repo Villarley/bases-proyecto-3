@@ -1,0 +1,26 @@
+{
+  "name": "@planilla-obrera/eslint-config",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "default": "./index.js"
+    }
+  },
+  "scripts": {
+    "build": "echo 'no build'",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.24.0",
+    "eslint": "^9.24.0",
+    "globals": "^16.0.0",
+    "typescript-eslint": "^8.29.1"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0"
+  }
+}

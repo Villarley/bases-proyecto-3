@@ -1,0 +1,23 @@
+{
+  "name": "@planilla-obrera/types",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src --max-warnings 0"
+  },
+  "devDependencies": {
+    "@planilla-obrera/eslint-config": "*",
+    "@types/node": "^22.14.1",
+    "eslint": "^9.24.0",
+    "typescript": "^5.8.3"
+  }
+}
