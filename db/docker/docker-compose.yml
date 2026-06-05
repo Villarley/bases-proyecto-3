@@ -1,0 +1,18 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    platform: linux/amd64
+    container_name: planilla-obrera-mssql
+    ports:
+      - '1433:1433'
+    environment:
+      ACCEPT_EULA: 'Y'
+    volumes:
+      - mssql-data:/var/opt/mssql
+      - ../../xml:/seed:ro
+      - ../../scripts:/sql-scripts:ro
+    env_file:
+      - ../../.env
+
+volumes:
+  mssql-data:
