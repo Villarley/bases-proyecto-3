@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Catalogos>
+    <TiposDocumentoIdentidad>
+        <TipoDocumentoIdentidad Id="1" Nombre="Cedula Nacional"/>
+        <TipoDocumentoIdentidad Id="2" Nombre="DIMEX"/>
+        <TipoDocumentoIdentidad Id="3" Nombre="Pasaporte"/>
+    </TiposDocumentoIdentidad>
+
+    <Departamentos>
+        <Departamento Id="1" Nombre="Produccion"/>
+        <Departamento Id="2" Nombre="Mantenimiento"/>
+        <Departamento Id="3" Nombre="Logistica"/>
+        <Departamento Id="4" Nombre="Administracion"/>
+    </Departamentos>
+
+    <Puestos>
+        <Puesto Nombre="Electricista" SalarioXHora="1200.00"/>
+        <Puesto Nombre="Auxiliar de Laboratorio" SalarioXHora="1250.00"/>
+        <Puesto Nombre="Operador de Maquina" SalarioXHora="1025.00"/>
+        <Puesto Nombre="Supervisor de Linea" SalarioXHora="1500.00"/>
+        <Puesto Nombre="Soldador" SalarioXHora="1300.00"/>
+        <Puesto Nombre="Empacador" SalarioXHora="950.00"/>
+    </Puestos>
+
+    <TiposJornada>
+        <TipoJornada Id="1" Nombre="Diurno" HoraInicio="06:00" HoraFin="14:00" DuracionHoras="8" CruzaMedianoche="0"/>
+        <TipoJornada Id="2" Nombre="Vespertino" HoraInicio="14:00" HoraFin="22:00" DuracionHoras="8" CruzaMedianoche="0"/>
+        <TipoJornada Id="3" Nombre="Nocturno" HoraInicio="22:00" HoraFin="06:00" DuracionHoras="8" CruzaMedianoche="1"/>
+    </TiposJornada>
+
+    <Feriados>
+        <Feriado Id="1" Nombre="Año Nuevo" Fecha="2026-01-01"/>
+        <Feriado Id="2" Nombre="Jueves Santo" Fecha="2026-04-02"/>
+        <Feriado Id="3" Nombre="Viernes Santo" Fecha="2026-04-03"/>
+        <Feriado Id="4" Nombre="Dia del Trabajo" Fecha="2026-05-01"/>
+        <Feriado Id="5" Nombre="Anexion de Guanacaste" Fecha="2026-07-25"/>
+        <Feriado Id="6" Nombre="Dia de la Independencia" Fecha="2026-09-15"/>
+    </Feriados>
+
+    <TiposMovimiento>
+        <TipoMovimiento Id="1" Nombre="Credito Horas Ordinarias" Accion="+"/>
+        <TipoMovimiento Id="2" Nombre="Credito Horas Extra Normales" Accion="+"/>
+        <TipoMovimiento Id="3" Nombre="Credito Horas Extra Dobles" Accion="+"/>
+        <TipoMovimiento Id="4" Nombre="Venta de Vacaciones y Otros" Accion="+"/>
+        <TipoMovimiento Id="5" Nombre="Deducciones de Ley (Caja)" Accion="-"/>
+        <TipoMovimiento Id="6" Nombre="Deducciones Asociacion Solidarista" Accion="-"/>
+        <TipoMovimiento Id="7" Nombre="Deduccion Ahorro Vacacional" Accion="-"/>
+        <TipoMovimiento Id="8" Nombre="Pension Alimenticia" Accion="-"/>
+        <TipoMovimiento Id="9" Nombre="Embargo Judicial" Accion="-"/>
+    </TiposMovimiento>
+
+    <TiposDeduccion>
+        <TipoDeduccion Id="1" Nombre="Caja (de Ley)" EsObligatorio="1" EsPorcentual="1" ValorPorDefecto="0.1067" IdTipoMovimiento="5"/>
+        <TipoDeduccion Id="2" Nombre="Asociacion Solidarista" EsObligatorio="0" EsPorcentual="1" ValorPorDefecto="0.05" IdTipoMovimiento="6"/>
+        <TipoDeduccion Id="3" Nombre="Ahorro Vacacional" EsObligatorio="0" EsPorcentual="0" ValorPorDefecto="0" IdTipoMovimiento="7"/>
+        <TipoDeduccion Id="4" Nombre="Pension Alimenticia" EsObligatorio="0" EsPorcentual="0" ValorPorDefecto="0" IdTipoMovimiento="8"/>
+        <TipoDeduccion Id="5" Nombre="Embargo Judicial" EsObligatorio="0" EsPorcentual="0" ValorPorDefecto="0" IdTipoMovimiento="9"/>
+    </TiposDeduccion>
+
+    <TiposUsuario>
+        <TipoUsuario Id="1" Nombre="administrador"/>
+        <TipoUsuario Id="2" Nombre="empleado"/>
+    </TiposUsuario>
+
+    <Usuarios>
+        <Usuario Username="Goku" Password="1234" TipoUsuario="administrador"/>
+        <Usuario Username="Willy" Password="1234" TipoUsuario="empleado"/>
+        <Usuario Username="UsuarioScripts" Password="UsuarioScripts" TipoUsuario="administrador"/>
+    </Usuarios>
+
+    <TiposEvento>
+        <TipoEvento Id="1" Nombre="Login"/>
+        <TipoEvento Id="2" Nombre="Logout"/>
+        <TipoEvento Id="3" Nombre="Listar empleados"/>
+        <TipoEvento Id="4" Nombre="Listar empleados con filtro"/>
+        <TipoEvento Id="5" Nombre="Insertar empleado"/>
+        <TipoEvento Id="6" Nombre="Eliminar empleado"/>
+        <TipoEvento Id="7" Nombre="Asociar deduccion"/>
+        <TipoEvento Id="8" Nombre="Desasociar deduccion"/>
+        <TipoEvento Id="9" Nombre="Consultar planilla semanal"/>
+        <TipoEvento Id="10" Nombre="Consultar planilla mensual"/>
+        <TipoEvento Id="11" Nombre="Editar empleado"/>
+        <TipoEvento Id="12" Nombre="Impersonar empleado"/>
+        <TipoEvento Id="13" Nombre="Regresar a interfaz de administrador"/>
+        <TipoEvento Id="14" Nombre="Ingreso de marcas de asistencia"/>
+        <TipoEvento Id="15" Nombre="Ingreso nuevas jornadas"/>
+    </TiposEvento>
+</Catalogos>
