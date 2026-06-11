@@ -1,0 +1,261 @@
+<Operaciones>
+    <!-- ========================================================
+        Jueves 2026-04-30> Insercion de empleados y semana 1
+        (inicia viernes 2026-05-01), Dia del trabajo
+        ====================================================== -->
+    <FechaOperacion Fecha="2026-04-30">
+        <InsertarEmpleado ValorDocumentoIdentidad="110011001" Nombre="Carlos Mendoza"
+            Puesto="Electricista" CuentaBancaria="CR2415115201001026284066"
+            FechaContratacion="2026-05-01"/>
+        <InsertarEmpleado ValorDocumentoIdentidad="305827920" Nombre="Ana Rodriguez"
+            Puesto="Cajero" CuentaBancaria="CR2415115201901026284067"/>
+        <InsertarEmpleado ValorDocumentoIdentidad="194739285" Nombre="Nicolas Vargas"
+            Puesto="Conductor" CuentaBancaria="CR2415115201901026392748"/>
+
+        <AsociaEmpleadoConDeduccion ValorDocumentoIdentidad="110011001"
+            TipoDeduccion="Ahorro Asociacion Solidarista" MontoFijo="0.00"/>
+        <AsociaEmpleadoConDeduccion ValorDocumentoIdentidad="305827920"
+            TipoDeduccion="Pension Alimenticia" MontoFijo="50000.00"/>
+        
+        <AsignarJornada ValorDocumentoIdentidad="110011001" Jornada="Diurno"
+            InicioSemana="2026-05-01"/>
+        <AsignarJornada ValorDocumentoIdentidad="305827920" Jornada="Vespertino"
+            InicioSemana="2026-05-01"/>
+        <AsignarJornada ValorDocumentoIdentidad="194739285" Jornada="Nocturno"
+            InicioSemana="2026-05-01"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-01"> <!-- Viernes y Feriado -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-01 06:00"
+            HoraSalida="2026-05-01 16:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-01 14:00"
+            HoraSalida="2026-05-02 01:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-01 22:00"
+            HoraSalida="2026-05-02 08:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-02"> <!-- Sabado -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-02 06:00"
+            HoraSalida="2026-05-02 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-02 14:00"
+            HoraSalida="2026-05-02 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-02 22:00"
+            HoraSalida="2026-05-03 06:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-03"> <!-- Domingo -->
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-03 14:00"
+            HoraSalida="2026-05-03 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-03 22:00"
+            HoraSalida="2026-05-04 6:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-04"> <!-- Lunes -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-04 06:00"
+            HoraSalida="2026-05-04 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-04 14:00"
+            HoraSalida="2026-05-04 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-04 22:00"
+            HoraSalida="2026-05-05 08:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-05"> <!-- Martes -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-05 06:00"
+            HoraSalida="2026-05-05 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-05 14:00"
+            HoraSalida="2026-05-05 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-05 22:00"
+            HoraSalida="2026-05-06 06:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-06"> <!-- Miercoles -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-06 06:00"
+            HoraSalida="2026-05-06 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-06 14:00"
+            HoraSalida="2026-05-07 00:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-06 22:00"
+            HoraSalida="2026-05-07 06:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-07"> <!-- Jueves -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-07 06:00"
+            HoraSalida="2026-05-07 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-07 14:00"
+            HoraSalida="2026-05-07 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-07 22:00"
+            HoraSalida="2026-05-08 06:00"/>
+
+        <!-- Cierre de semana 1 e inicio de semana 2 (inicia viernes 2026-05-08) -->
+        <AsignarJornada ValorDocumentoIdentidad="110011001" Jornada="Vespertino"
+            InicioSemana="2026-05-08"/>
+        <AsignarJornada ValorDocumentoIdentidad="305827920" Jornada="Nocturno"
+            InicioSemana="2026-05-08"/>
+        <AsignarJornada ValorDocumentoIdentidad="194739285" Jornada="Diurno"
+            InicioSemana="2026-05-08"/>
+
+        <AsociaEmpleadoConDeduccion ValorDocumentoIdentidad="305827920" 
+            TipoDeduccion="Ahorro Vacacional" MontoFijo="25000.00"/>
+    </FechaOperacion>
+
+    <!-- Semana 2-->
+    <FechaOperacion Fecha="2026-05-08"> <!-- Viernes -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-08 14:00"
+            HoraSalida="2026-05-08 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-08 22:00"
+            HoraSalida="2026-05-09 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-08 06:00"
+            HoraSalida="2026-05-08 14:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-09"> <!-- Sabado -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-09 14:00"
+            HoraSalida="2026-05-09 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-09 22:00"
+            HoraSalida="2026-05-10 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-09 06:00"
+            HoraSalida="2026-05-09 14:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-10"> <!-- Domingo -->
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-10 22:00"
+            HoraSalida="2026-05-11 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-10 06:00"
+            HoraSalida="2026-05-10 14:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-11"> <!-- Lunes -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-11 14:00"
+            HoraSalida="2026-05-11 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-11 06:00"
+            HoraSalida="2026-05-11 14:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-12"> <!-- Martes -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-12 14:00"
+            HoraSalida="2026-05-12 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-12 22:00"
+            HoraSalida="2026-05-13 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-12 06:00"
+            HoraSalida="2026-05-12 14:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-13"> <!-- Miercoles -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-13 14:00"
+            HoraSalida="2026-05-13 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-13 22:00"
+            HoraSalida="2026-05-14 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-13 06:00"
+            HoraSalida="2026-05-13 14:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-14"> <!-- Jueves -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-14 14:00"
+            HoraSalida="2026-05-14 22:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-14 22:00"
+            HoraSalida="2026-05-15 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-14 06:00"
+            HoraSalida="2026-05-14 14:00"/>
+        
+        <!-- Cierre de semana 2 e inicio de semana 3 (inicia viernes 2026-05-15) -->
+        <AsignarJornada ValorDocumentoIdentidad="110011001" Jornada="Nocturno"
+            InicioSemana="2026-05-15"/>
+        <AsignarJornada ValorDocumentoIdentidad="305827920" Jornada="Diurno"
+            InicioSemana="2026-05-15"/>
+        <AsignarJornada ValorDocumentoIdentidad="194739285" Jornada="Vespertino"
+            InicioSemana="2026-05-15"/>
+
+        <AsociaEmpleadoConDeduccion ValorDocumentoIdentidad="110011001"
+            TipoDeduccion="Ahorro Vacacional" MontoFijo="15000.00"/>
+        <AsociaEmpleadoConDeduccion ValorDocumentoIdentidad="194739285"
+            TipoDeduccion="Ahorro Asociacion Solidarista" MontoFijo="0.00"/>
+        
+        <DesasociaEmpleadoConDeduccion ValorDocumentoIdentidad="194739285"
+            TipoDeduccion="Pension Alimenticia"/>
+    </FechaOperacion>
+
+    <!-- Semana 3 -->
+    <FechaOperacion Fecha="2026-05-15"> <!-- Viernes -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-15 22:00"
+            HoraSalida="2026-05-16 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-15 06:00"
+            HoraSalida="2026-05-15 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-15 14:00"
+            HoraSalida="2026-05-15 22:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-16"> <!-- Sabado -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-16 22:00"
+            HoraSalida="2026-05-17 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-16 06:00"
+            HoraSalida="2026-05-16 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-16 14:00"
+            HoraSalida="2026-05-16 22:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-17"> <!-- Domingo -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-17 22:00"
+            HoraSalida="2026-05-18 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-17 06:00"
+            HoraSalida="2026-05-17 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-17 14:00"
+            HoraSalida="2026-05-17 22:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-18"> <!-- Lunes -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-18 22:00"
+            HoraSalida="2026-05-19 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-18 06:00"
+            HoraSalida="2026-05-18 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-18 14:00"
+            HoraSalida="2026-05-18 22:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-19"> <!-- Martes -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-19 22:00"
+            HoraSalida="2026-05-20 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-19 06:00"
+            HoraSalida="2026-05-19 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-19 14:00"
+            HoraSalida="2026-05-19 22:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-20"> <!-- Miercoles -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-20 22:00"
+            HoraSalida="2026-05-21 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-20 06:00"
+            HoraSalida="2026-05-20 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-20 14:00"
+            HoraSalida="2026-05-20 22:00"/>
+    </FechaOperacion>
+
+    <FechaOperacion Fecha="2026-05-21"> <!-- Jueves -->
+        <MarcaAsistencia ValorDocumentoIdentidad="110011001" HoraEntrada="2026-05-21 22:00"
+            HoraSalida="2026-05-22 06:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="305827920" HoraEntrada="2026-05-21 06:00"
+            HoraSalida="2026-05-21 14:00"/>
+        <MarcaAsistencia ValorDocumentoIdentidad="194739285" HoraEntrada="2026-05-21 14:00"
+            HoraSalida="2026-05-21 22:00"/>
+
+        <!-- Cierre de semana 2 e inicio de semana 3 (inicia viernes 2026-05-15) -->
+        <AsignarJornada ValorDocumentoIdentidad="110011001" Jornada="Diurno"
+            InicioSemana="2026-05-22"/>
+        <AsignarJornada ValorDocumentoIdentidad="305827920" Jornada="Vespertino"
+            InicioSemana="2026-05-22"/>
+        <AsignarJornada ValorDocumentoIdentidad="194739285" Jornada="Nocturno"
+            InicioSemana="2026-05-22"/>
+
+        <AsociaEmpleadoConDeduccion ValorDocumentoIdentidad="305827920"
+            TipoDeduccion="Pension Alimenticia" MontoFijo="30000.00"/>
+
+        <DesasociaEmpleadoConDeduccion ValorDocumentoIdentidad="110011001"
+            TipoDeduccion="Ahorro Asociacion Solidarista"/>
+    </FechaOperacion>
+
+    
+</Operaciones>
+    
+
+    
+
+
+            
