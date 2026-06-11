@@ -24,8 +24,8 @@ DELETE FROM dbo.TipoEvento;
 DELETE FROM dbo.Usuario;
 DELETE FROM dbo.TipoUsuario;
 
-DBCC CHECKIDENT (N'dbo.Puesto', RESEED, 0);
-DBCC CHECKIDENT (N'dbo.Usuario', RESEED, 0);
+DBCC CHECKIDENT (N'dbo.Puesto', RESEED, 1);
+DBCC CHECKIDENT (N'dbo.Usuario', RESEED, 1);
 
 INSERT INTO dbo.TipoDocumentoIdentidad
 (

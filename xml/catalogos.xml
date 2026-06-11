@@ -20,6 +20,8 @@
         <Puesto Nombre="Supervisor de Linea" SalarioXHora="1500.00"/>
         <Puesto Nombre="Soldador" SalarioXHora="1300.00"/>
         <Puesto Nombre="Empacador" SalarioXHora="950.00"/>
+        <Puesto Nombre="Cajero" SalarioXHora="1100.00"/>
+        <Puesto Nombre="Conductor" SalarioXHora="1350.00"/>
     </Puestos>
 
     <TiposJornada>
@@ -51,7 +53,7 @@
 
     <TiposDeduccion>
         <TipoDeduccion Id="1" Nombre="Caja (de Ley)" EsObligatorio="1" EsPorcentual="1" ValorPorDefecto="0.1067" IdTipoMovimiento="5"/>
-        <TipoDeduccion Id="2" Nombre="Asociacion Solidarista" EsObligatorio="0" EsPorcentual="1" ValorPorDefecto="0.05" IdTipoMovimiento="6"/>
+        <TipoDeduccion Id="2" Nombre="Ahorro Asociacion Solidarista" EsObligatorio="0" EsPorcentual="1" ValorPorDefecto="0.05" IdTipoMovimiento="6"/>
         <TipoDeduccion Id="3" Nombre="Ahorro Vacacional" EsObligatorio="0" EsPorcentual="0" ValorPorDefecto="0" IdTipoMovimiento="7"/>
         <TipoDeduccion Id="4" Nombre="Pension Alimenticia" EsObligatorio="0" EsPorcentual="0" ValorPorDefecto="0" IdTipoMovimiento="8"/>
         <TipoDeduccion Id="5" Nombre="Embargo Judicial" EsObligatorio="0" EsPorcentual="0" ValorPorDefecto="0" IdTipoMovimiento="9"/>
