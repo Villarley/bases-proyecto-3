@@ -573,8 +573,7 @@ CREATE OR ALTER PROCEDURE dbo.spSim_ProcesarEmpleadoDia
     @inIdUsuario INT
     , @inIP NVARCHAR(45)
     , @inIdEmpleado INT
-    , @inValorDocumentoIdentidad NVARCHAR(50)
-    , @inXml XML
+    , @inMarcas dbo.MarcaAsistenciaLista READONLY
     , @inFecha DATE
     , @inEsDiaCierre BIT
     , @inEsPrimerEmpleado BIT
@@ -679,19 +678,11 @@ BEGIN
         ;WITH Marca AS
         (
             SELECT
-                ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS RowNum
-                , TRY_CONVERT(DATETIME2(0), T.c.value(N'@HoraEntrada', N'NVARCHAR(20)')) AS HoraEntrada
-                , TRY_CONVERT(DATETIME2(0), T.c.value(N'@HoraSalida', N'NVARCHAR(20)')) AS HoraSalida
+                m.RowNum
+                , m.HoraEntrada
+                , m.HoraSalida
             FROM
-                @inXml.nodes(N'/Operaciones/FechaOperacion') AS FO (n)
-            CROSS APPLY
-                n.nodes(N'MarcaAsistencia') AS T (c)
-            WHERE
-                (FO.n.value(N'@Fecha', N'DATE') = @inFecha)
-                AND (
-                    T.c.value(N'@ValorDocumentoIdentidad', N'NVARCHAR(50)')
-                    = @inValorDocumentoIdentidad
-                )
+                @inMarcas AS m
         )
         , MarcaJornada AS
         (
@@ -1500,6 +1491,7 @@ BEGIN
         , IdEmpleado INT NOT NULL
         , ValorDocumentoIdentidad NVARCHAR(50) NOT NULL
     );
+    DECLARE @MarcasEmpleado dbo.MarcaAsistenciaLista;
 
     DECLARE @InicioSemanaActual DATE;
     DECLARE @FinSemanaActual DATE;
@@ -1840,12 +1832,28 @@ BEGIN
                     ELSE 0
                 END;
 
+            DELETE FROM @MarcasEmpleado;
+
+            INSERT INTO @MarcasEmpleado
+            (
+                RowNum
+                , HoraEntrada
+                , HoraSalida
+            )
+            SELECT
+                ROW_NUMBER() OVER (ORDER BY ma.HoraEntrada ASC)
+                , ma.HoraEntrada
+                , ma.HoraSalida
+            FROM
+                @MarcaAsistencia AS ma
+            WHERE
+                (ma.ValorDocumentoIdentidad = @ValorDocumentoIdentidad);
+
             EXEC dbo.spSim_ProcesarEmpleadoDia
                 @inIdUsuario = @inIdUsuario
                 , @inIP = @inIP
                 , @inIdEmpleado = @IdEmpleado
-                , @inValorDocumentoIdentidad = @ValorDocumentoIdentidad
-                , @inXml = @inXml
+                , @inMarcas = @MarcasEmpleado
                 , @inFecha = @inFecha
                 , @inEsDiaCierre = @EsDiaCierre
                 , @inEsPrimerEmpleado = @EsPrimerEmpleado

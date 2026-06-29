@@ -472,3 +472,15 @@ CREATE TABLE dbo.DBError
     , CONSTRAINT PK_DBError PRIMARY KEY CLUSTERED (Id)
 );
 GO
+
+/* ------------------------------------------------------------------ */
+/* Tipos de tabla (Table-Valued Parameters)                           */
+/* ------------------------------------------------------------------ */
+
+CREATE TYPE dbo.MarcaAsistenciaLista AS TABLE
+(
+    RowNum INT NOT NULL PRIMARY KEY
+    , HoraEntrada DATETIME2(0) NOT NULL
+    , HoraSalida DATETIME2(0) NOT NULL
+);
+GO
