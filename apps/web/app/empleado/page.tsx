@@ -82,7 +82,7 @@ export default function EmpleadoPage() {
       );
       setDrill({
         kind: 'deducciones-semana',
-        titulo: `Deducciones — semana del ${fecha(row.FechaInicioSemana)}`,
+        titulo: `Deducciones de la semana del ${fecha(row.FechaInicioSemana)}`,
         rows: res.items,
       });
     } catch (err) {
@@ -101,7 +101,7 @@ export default function EmpleadoPage() {
       );
       setDrill({
         kind: 'detalle-semana',
-        titulo: `Detalle de horas — semana del ${fecha(row.FechaInicioSemana)}`,
+        titulo: `Detalle de horas de la semana del ${fecha(row.FechaInicioSemana)}`,
         rows: res.items,
       });
     } catch (err) {
@@ -121,7 +121,7 @@ export default function EmpleadoPage() {
       );
       setDrill({
         kind: 'deducciones-mes',
-        titulo: `Deducciones — ${nombreMes(row.Mes)} ${row.Anio}`,
+        titulo: `Deducciones de ${nombreMes(row.Mes)} ${row.Anio}`,
         rows: res.items,
       });
     } catch (err) {
@@ -401,7 +401,7 @@ function DeduccionesTable({ rows }: { rows: DeduccionRow[] }) {
             <td className="px-3 py-2 text-right tabular-nums">
               {r.PorcentajeAplicado != null
                 ? `${(r.PorcentajeAplicado * 100).toFixed(2)}%`
-                : '—'}
+                : '-'}
             </td>
             <td className="px-3 py-2 text-right">
               <Money>{r.MontoDeduccion}</Money>

@@ -1,5 +1,3 @@
-/** Tipos de dominio compartidos — extender según crezca la app. */
-
 export type TipoUsuario = 'administrador' | 'empleado';
 
 export interface EmpleadoListItem {
