@@ -569,290 +569,15 @@ BEGIN
 END;
 GO
 
-CREATE OR ALTER PROCEDURE dbo.spSim_AbrirMes
+CREATE OR ALTER PROCEDURE dbo.spSim_ProcesarEmpleadoDia
     @inIdUsuario INT
     , @inIP NVARCHAR(45)
-    , @inFechaOperacion DATE
-    , @outResultCode INT OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SET @outResultCode = 50008;
-
-    DECLARE @F DATE;
-    DECLARE @EOM DATE;
-    DECLARE @DayIndexEOM INT;
-    DECLARE @FechaFin DATE;
-    DECLARE @Anio INT;
-    DECLARE @Mes INT;
-    DECLARE @CantidadSemanas INT;
-    DECLARE @IdMesPlanilla INT;
-
-    BEGIN TRY
-        SET @F = DATEADD(DAY, 1, @inFechaOperacion);
-
-        IF EXISTS
-        (
-            SELECT
-                1
-            FROM
-                dbo.MesPlanilla AS mp
-            WHERE
-                (mp.FechaInicio <= @F)
-                AND (mp.FechaFin >= @F)
-        )
-        BEGIN
-            SET @outResultCode = 0;
-
-            RETURN;
-        END;
-
-        SET @EOM = EOMONTH(@F);
-        SET @DayIndexEOM = DATEDIFF(DAY, '19000101', @EOM) % 7;
-        SET @FechaFin = DATEADD(DAY, -((@DayIndexEOM - 3 + 7) % 7), @EOM);
-
-        IF (@FechaFin < @F)
-        BEGIN
-            SET @EOM = EOMONTH(DATEADD(MONTH, 1, @F));
-            SET @DayIndexEOM = DATEDIFF(DAY, '19000101', @EOM) % 7;
-            SET @FechaFin = DATEADD(DAY, -((@DayIndexEOM - 3 + 7) % 7), @EOM);
-        END;
-
-        SET @Anio = YEAR(@FechaFin);
-        SET @Mes = MONTH(@FechaFin);
-        SET @CantidadSemanas = (DATEDIFF(DAY, @F, @FechaFin) + 1) / 7;
-
-        BEGIN TRANSACTION;
-
-        INSERT INTO dbo.MesPlanilla
-        (
-            Anio
-            , Mes
-            , FechaInicio
-            , FechaFin
-            , CantidadSemanas
-        )
-        VALUES
-        (
-            @Anio
-            , @Mes
-            , @F
-            , @FechaFin
-            , @CantidadSemanas
-        );
-
-        SET @IdMesPlanilla = SCOPE_IDENTITY();
-
-        INSERT INTO dbo.PlanillaMesEmpleado
-        (
-            IdMesPlanilla
-            , IdEmpleado
-            , SalarioBrutoMensual
-            , TotalDeduccionesMensual
-            , SalarioNetoMensual
-        )
-        SELECT
-            @IdMesPlanilla
-            , e.Id
-            , 0
-            , 0
-            , 0
-        FROM
-            dbo.Empleado AS e
-        WHERE
-            (e.EsActivo = 1);
-
-        COMMIT TRANSACTION;
-
-        SET @outResultCode = 0;
-    END TRY
-    BEGIN CATCH
-        IF (@@TRANCOUNT > 0)
-        BEGIN
-            ROLLBACK TRANSACTION;
-        END;
-
-        INSERT INTO dbo.DBError
-        (
-            UserName
-            , Number
-            , State
-            , Severity
-            , Line
-            , [Procedure]
-            , [Message]
-            , [DateTime]
-        )
-        VALUES
-        (
-            SUSER_SNAME()
-            , ERROR_NUMBER()
-            , ERROR_STATE()
-            , ERROR_SEVERITY()
-            , ERROR_LINE()
-            , ERROR_PROCEDURE()
-            , ERROR_MESSAGE()
-            , SYSDATETIME()
-        );
-
-        SET @outResultCode = 50008;
-    END CATCH;
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.spSim_AbrirSemana
-    @inIdUsuario INT
-    , @inIP NVARCHAR(45)
-    , @inFechaOperacion DATE
-    , @outResultCode INT OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SET @outResultCode = 50008;
-
-    DECLARE @F DATE;
-    DECLARE @IdMesPlanilla INT;
-    DECLARE @NumeroSemana INT;
-    DECLARE @IdSemanaPlanilla INT;
-
-    BEGIN TRY
-        SET @F = DATEADD(DAY, 1, @inFechaOperacion);
-
-        IF EXISTS
-        (
-            SELECT
-                1
-            FROM
-                dbo.SemanaPlanilla AS sp
-            WHERE
-                (sp.FechaInicio = @F)
-        )
-        BEGIN
-            SET @outResultCode = 0;
-
-            RETURN;
-        END;
-
-        SELECT
-            @IdMesPlanilla = mp.Id
-        FROM
-            dbo.MesPlanilla AS mp
-        WHERE
-            (mp.FechaInicio <= @F)
-            AND (mp.FechaFin >= @F);
-
-        IF (@IdMesPlanilla IS NULL)
-        BEGIN
-            SET @outResultCode = 50013;
-
-            RETURN;
-        END;
-
-        SELECT
-            @NumeroSemana = COUNT(1) + 1
-        FROM
-            dbo.SemanaPlanilla AS sp
-        WHERE
-            (sp.IdMesPlanilla = @IdMesPlanilla);
-
-        BEGIN TRANSACTION;
-
-        INSERT INTO dbo.SemanaPlanilla
-        (
-            IdMesPlanilla
-            , NumeroSemana
-            , FechaInicio
-            , FechaFin
-        )
-        VALUES
-        (
-            @IdMesPlanilla
-            , @NumeroSemana
-            , @F
-            , DATEADD(DAY, 6, @F)
-        );
-
-        SET @IdSemanaPlanilla = SCOPE_IDENTITY();
-
-        INSERT INTO dbo.PlanillaSemanaEmpleado
-        (
-            IdSemanaPlanilla
-            , IdEmpleado
-            , SalarioBruto
-            , TotalDeducciones
-            , SalarioNeto
-            , CantidadHorasOrdinarias
-            , CantidadHorasExtraNormales
-            , CantidadHorasExtraDobles
-        )
-        SELECT
-            @IdSemanaPlanilla
-            , e.Id
-            , 0
-            , 0
-            , 0
-            , 0
-            , 0
-            , 0
-        FROM
-            dbo.Empleado AS e
-        WHERE
-            (e.EsActivo = 1);
-
-        UPDATE
-            dbo.JornadaEmpleadoSemana
-        SET
-            IdSemanaPlanilla = @IdSemanaPlanilla
-        WHERE
-            (FechaInicioSemana = @F)
-            AND (IdSemanaPlanilla IS NULL);
-
-        COMMIT TRANSACTION;
-
-        SET @outResultCode = 0;
-    END TRY
-    BEGIN CATCH
-        IF (@@TRANCOUNT > 0)
-        BEGIN
-            ROLLBACK TRANSACTION;
-        END;
-
-        INSERT INTO dbo.DBError
-        (
-            UserName
-            , Number
-            , State
-            , Severity
-            , Line
-            , [Procedure]
-            , [Message]
-            , [DateTime]
-        )
-        VALUES
-        (
-            SUSER_SNAME()
-            , ERROR_NUMBER()
-            , ERROR_STATE()
-            , ERROR_SEVERITY()
-            , ERROR_LINE()
-            , ERROR_PROCEDURE()
-            , ERROR_MESSAGE()
-            , SYSDATETIME()
-        );
-
-        SET @outResultCode = 50008;
-    END CATCH;
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.spSim_ProcesarMarca
-    @inIdUsuario INT
-    , @inIP NVARCHAR(45)
+    , @inIdEmpleado INT
     , @inValorDocumentoIdentidad NVARCHAR(50)
-    , @inHoraEntrada DATETIME2(0)
-    , @inHoraSalida DATETIME2(0)
+    , @inXml XML
+    , @inFecha DATE
+    , @inEsDiaCierre BIT
+    , @inEsPrimerEmpleado BIT
     , @outResultCode INT OUTPUT
 AS
 BEGIN
@@ -860,95 +585,80 @@ BEGIN
 
     SET @outResultCode = 50008;
 
-    DECLARE @IdEmpleado INT;
     DECLARE @SalarioXHora DECIMAL(12, 2);
-    DECLARE @FechaEntrada DATE;
-    DECLARE @FechaSalida DATE;
-    DECLARE @InicioSemanaJornada DATE;
-    DECLARE @IdTipoJornada INT;
-    DECLARE @HoraFin TIME(0);
-    DECLARE @CruzaMedianoche BIT;
-    DECLARE @FinJornada DATETIME2(0);
-    DECLARE @LimiteOrdinario DATETIME2(0);
-    DECLARE @HorasOrdinarias INT;
-    DECLARE @HorasExtraTotal INT;
-    DECLARE @HorasExtraNormales INT;
-    DECLARE @HorasExtraDobles INT;
-    DECLARE @i INT;
-    DECLARE @HoraInicioExtra DATETIME2(0);
-    DECLARE @FechaHoraInicioExtra DATE;
-    DECLARE @DayIndexExtra INT;
+    DECLARE @InicioSemana DATE;
+    DECLARE @FinSemana DATE;
     DECLARE @IdSemanaPlanilla INT;
     DECLARE @IdMesPlanilla INT;
-    DECLARE @MontoOrdinarias DECIMAL(14, 2);
-    DECLARE @MontoExtraNormales DECIMAL(14, 2);
-    DECLARE @MontoExtraDobles DECIMAL(14, 2);
-    DECLARE @TotalCredito DECIMAL(14, 2);
     DECLARE @IdPlanillaSemanaEmpleado INT;
     DECLARE @IdPlanillaMesEmpleado INT;
+    DECLARE @CantidadSemanas INT;
+
+    DECLARE @MarcaHoras TABLE
+    (
+        RowNum INT NOT NULL PRIMARY KEY
+        , HoraEntrada DATETIME2(0) NOT NULL
+        , HoraSalida DATETIME2(0) NOT NULL
+        , TieneJornada BIT NOT NULL
+        , Ordinarias INT NOT NULL
+        , ExtraNormales INT NOT NULL
+        , ExtraDobles INT NOT NULL
+    );
+
+    DECLARE @MovDia TABLE
+    (
+        Fase TINYINT NOT NULL
+        , IdTipoMovimiento INT NOT NULL
+        , IdTipoDeduccion INT NULL
+        , CantidadHoras INT NULL
+        , Monto DECIMAL(14, 2) NOT NULL
+        , Signo INT NOT NULL
+        , Porcentaje DECIMAL(12, 4) NULL
+    );
+
+    DECLARE @SaldoInicial DECIMAL(14, 2);
+    DECLARE @SumCreditos DECIMAL(14, 2);
+    DECLARE @SumDebitos DECIMAL(14, 2);
+    DECLARE @SalarioBrutoSemana DECIMAL(14, 2);
+    DECLARE @HorasOrd INT;
+    DECLARE @HorasExtraN INT;
+    DECLARE @HorasExtraD INT;
+    DECLARE @CantidadMarcas INT;
+
+    DECLARE @InicioSemanaSiguiente DATE;
+    DECLARE @FinSemanaSiguiente DATE;
+    DECLARE @IdSemanaPlanillaSiguiente INT;
+    DECLARE @IdMesPlanillaSiguiente INT;
+    DECLARE @IdPlanillaMesEmpleadoSiguiente INT;
+    DECLARE @NumeroSemanaSiguiente INT;
+    DECLARE @EOM DATE;
+    DECLARE @DayIndexEOM INT;
+    DECLARE @FechaFinMesSig DATE;
+    DECLARE @AnioMesSig INT;
+    DECLARE @MesMesSig INT;
+    DECLARE @CantidadSemanasMesSig INT;
+
     DECLARE @Parametros NVARCHAR(MAX);
     DECLARE @BitacoraResultCode INT;
 
     BEGIN TRY
         SELECT
-            @IdEmpleado = e.Id
-            , @SalarioXHora = p.SalarioXHora
+            @SalarioXHora = p.SalarioXHora
         FROM
             dbo.Empleado AS e
         INNER JOIN
             dbo.Puesto AS p
             ON (p.Id = e.IdPuesto)
         WHERE
-            (e.ValorDocumentoIdentidad = @inValorDocumentoIdentidad)
-            AND (e.EsActivo = 1);
+            (e.Id = @inIdEmpleado);
 
-        IF (@IdEmpleado IS NULL)
-        BEGIN
-            SET @outResultCode = 50003;
-
-            RETURN;
-        END;
-
-        SET @FechaEntrada = CAST(@inHoraEntrada AS DATE);
-        SET @FechaSalida = CAST(@inHoraSalida AS DATE);
-
-        SET @InicioSemanaJornada =
+        SET @InicioSemana =
             DATEADD(
                 DAY
-                , -((DATEDIFF(DAY, '19000101', @FechaEntrada) % 7 + 3) % 7)
-                , @FechaEntrada
+                , -((DATEDIFF(DAY, '19000101', @inFecha) % 7 + 3) % 7)
+                , @inFecha
             );
-
-        SELECT
-            @IdTipoJornada = jes.IdTipoJornada
-            , @HoraFin = tj.HoraFin
-            , @CruzaMedianoche = tj.CruzaMedianoche
-        FROM
-            dbo.JornadaEmpleadoSemana AS jes
-        INNER JOIN
-            dbo.TipoJornada AS tj
-            ON (tj.Id = jes.IdTipoJornada)
-        WHERE
-            (jes.IdEmpleado = @IdEmpleado)
-            AND (jes.FechaInicioSemana = @InicioSemanaJornada);
-
-        IF (@IdTipoJornada IS NULL)
-        BEGIN
-            SET @outResultCode = 50017;
-
-            RETURN;
-        END;
-
-        SET @FinJornada =
-            CAST(
-                CONCAT(CAST(@FechaEntrada AS NVARCHAR(10)), N' ', CAST(@HoraFin AS NVARCHAR(8)))
-                AS DATETIME2(0)
-            );
-
-        IF (@CruzaMedianoche = 1)
-        BEGIN
-            SET @FinJornada = DATEADD(DAY, 1, @FinJornada);
-        END;
+        SET @FinSemana = DATEADD(DAY, 6, @InicioSemana);
 
         SELECT
             @IdSemanaPlanilla = sp.Id
@@ -956,555 +666,261 @@ BEGIN
         FROM
             dbo.SemanaPlanilla AS sp
         WHERE
-            (sp.FechaInicio <= @FechaSalida)
-            AND (sp.FechaFin >= @FechaSalida);
+            (sp.FechaInicio <= @inFecha)
+            AND (sp.FechaFin >= @inFecha);
 
-        IF (@IdSemanaPlanilla IS NULL)
-        BEGIN
-            SET @outResultCode = 50018;
-
-            RETURN;
-        END;
-
-        SET @LimiteOrdinario =
-            CASE
-                WHEN (@inHoraSalida < @FinJornada) THEN @inHoraSalida
-                ELSE @FinJornada
-            END;
-
-        SET @HorasOrdinarias = DATEDIFF(MINUTE, @inHoraEntrada, @LimiteOrdinario) / 60;
-
-        IF (@HorasOrdinarias < 0)
-        BEGIN
-            SET @HorasOrdinarias = 0;
-        END;
-
-        SET @HorasExtraTotal = 0;
-        SET @HorasExtraNormales = 0;
-        SET @HorasExtraDobles = 0;
-
-        IF (@inHoraSalida > @FinJornada)
-        BEGIN
-            SET @HorasExtraTotal = DATEDIFF(MINUTE, @FinJornada, @inHoraSalida) / 60;
-
-            IF (@HorasExtraTotal < 0)
-            BEGIN
-                SET @HorasExtraTotal = 0;
-            END;
-
-            SET @i = 0;
-
-            WHILE (@i < @HorasExtraTotal)
-            BEGIN
-                SET @HoraInicioExtra = DATEADD(HOUR, @i, @FinJornada);
-                SET @FechaHoraInicioExtra = CAST(@HoraInicioExtra AS DATE);
-                SET @DayIndexExtra = DATEDIFF(DAY, '19000101', @FechaHoraInicioExtra) % 7;
-
-                IF (
-                    (@DayIndexExtra = 6)
-                    OR EXISTS
-                    (
-                        SELECT
-                            1
-                        FROM
-                            dbo.Feriado AS f
-                        WHERE
-                            (f.Fecha = @FechaHoraInicioExtra)
-                    )
-                )
-                BEGIN
-                    SET @HorasExtraDobles = @HorasExtraDobles + 1;
-                END
-                ELSE
-                BEGIN
-                    SET @HorasExtraNormales = @HorasExtraNormales + 1;
-                END;
-
-                SET @i = @i + 1;
-            END;
-        END;
-
-        SET @MontoOrdinarias = @HorasOrdinarias * @SalarioXHora;
-        SET @MontoExtraNormales = @HorasExtraNormales * @SalarioXHora * 1.5;
-        SET @MontoExtraDobles = @HorasExtraDobles * @SalarioXHora * 2.0;
-        SET @TotalCredito = @MontoOrdinarias + @MontoExtraNormales + @MontoExtraDobles;
-
-        SET @Parametros =
-            N'{"idEmpleado":'
-            + CAST(@IdEmpleado AS NVARCHAR(20))
-            + N',"marcaInicio":"'
-            + CONVERT(NVARCHAR(19), @inHoraEntrada, 120)
-            + N'","marcaFin":"'
-            + CONVERT(NVARCHAR(19), @inHoraSalida, 120)
-            + N'"}';
-
-        BEGIN TRANSACTION;
-
-        INSERT INTO dbo.MarcaAsistencia
-        (
-            IdEmpleado
-            , Fecha
-            , HoraEntrada
-            , HoraSalida
-            , Procesada
-        )
-        VALUES
-        (
-            @IdEmpleado
-            , @FechaEntrada
-            , @inHoraEntrada
-            , @inHoraSalida
-            , 1
-        );
-
-        IF NOT EXISTS
-        (
-            SELECT
-                1
-            FROM
-                dbo.PlanillaSemanaEmpleado AS pse
-            WHERE
-                (pse.IdSemanaPlanilla = @IdSemanaPlanilla)
-                AND (pse.IdEmpleado = @IdEmpleado)
-        )
-        BEGIN
-            INSERT INTO dbo.PlanillaSemanaEmpleado
-            (
-                IdSemanaPlanilla
-                , IdEmpleado
-                , SalarioBruto
-                , TotalDeducciones
-                , SalarioNeto
-                , CantidadHorasOrdinarias
-                , CantidadHorasExtraNormales
-                , CantidadHorasExtraDobles
-            )
-            VALUES
-            (
-                @IdSemanaPlanilla
-                , @IdEmpleado
-                , 0
-                , 0
-                , 0
-                , 0
-                , 0
-                , 0
-            );
-        END;
-
-        SELECT
-            @IdPlanillaSemanaEmpleado = pse.Id
-        FROM
-            dbo.PlanillaSemanaEmpleado AS pse
-        WHERE
-            (pse.IdSemanaPlanilla = @IdSemanaPlanilla)
-            AND (pse.IdEmpleado = @IdEmpleado);
-
-        IF NOT EXISTS
-        (
-            SELECT
-                1
-            FROM
-                dbo.PlanillaMesEmpleado AS pme
-            WHERE
-                (pme.IdMesPlanilla = @IdMesPlanilla)
-                AND (pme.IdEmpleado = @IdEmpleado)
-        )
-        BEGIN
-            INSERT INTO dbo.PlanillaMesEmpleado
-            (
-                IdMesPlanilla
-                , IdEmpleado
-                , SalarioBrutoMensual
-                , TotalDeduccionesMensual
-                , SalarioNetoMensual
-            )
-            VALUES
-            (
-                @IdMesPlanilla
-                , @IdEmpleado
-                , 0
-                , 0
-                , 0
-            );
-        END;
-
-        SELECT
-            @IdPlanillaMesEmpleado = pme.Id
-        FROM
-            dbo.PlanillaMesEmpleado AS pme
-        WHERE
-            (pme.IdMesPlanilla = @IdMesPlanilla)
-            AND (pme.IdEmpleado = @IdEmpleado);
-
-        IF (@HorasOrdinarias > 0)
-        BEGIN
-            INSERT INTO dbo.Movimiento
-            (
-                IdEmpleado
-                , IdPlanillaSemanaEmpleado
-                , IdTipoMovimiento
-                , IdTipoDeduccion
-                , Fecha
-                , CantidadHoras
-                , Monto
-                , IdPostByUser
-                , PostInIP
-            )
-            VALUES
-            (
-                @IdEmpleado
-                , @IdPlanillaSemanaEmpleado
-                , 1
-                , NULL
-                , @FechaEntrada
-                , @HorasOrdinarias
-                , @MontoOrdinarias
-                , @inIdUsuario
-                , @inIP
-            );
-        END;
-
-        IF (@HorasExtraNormales > 0)
-        BEGIN
-            INSERT INTO dbo.Movimiento
-            (
-                IdEmpleado
-                , IdPlanillaSemanaEmpleado
-                , IdTipoMovimiento
-                , IdTipoDeduccion
-                , Fecha
-                , CantidadHoras
-                , Monto
-                , IdPostByUser
-                , PostInIP
-            )
-            VALUES
-            (
-                @IdEmpleado
-                , @IdPlanillaSemanaEmpleado
-                , 2
-                , NULL
-                , @FechaEntrada
-                , @HorasExtraNormales
-                , @MontoExtraNormales
-                , @inIdUsuario
-                , @inIP
-            );
-        END;
-
-        IF (@HorasExtraDobles > 0)
-        BEGIN
-            INSERT INTO dbo.Movimiento
-            (
-                IdEmpleado
-                , IdPlanillaSemanaEmpleado
-                , IdTipoMovimiento
-                , IdTipoDeduccion
-                , Fecha
-                , CantidadHoras
-                , Monto
-                , IdPostByUser
-                , PostInIP
-            )
-            VALUES
-            (
-                @IdEmpleado
-                , @IdPlanillaSemanaEmpleado
-                , 3
-                , NULL
-                , @FechaEntrada
-                , @HorasExtraDobles
-                , @MontoExtraDobles
-                , @inIdUsuario
-                , @inIP
-            );
-        END;
-
-        UPDATE
-            dbo.PlanillaSemanaEmpleado
-        SET
-            SalarioBruto = SalarioBruto + @TotalCredito
-            , SalarioNeto = SalarioNeto + @TotalCredito
-            , CantidadHorasOrdinarias = CantidadHorasOrdinarias + @HorasOrdinarias
-            , CantidadHorasExtraNormales = CantidadHorasExtraNormales + @HorasExtraNormales
-            , CantidadHorasExtraDobles = CantidadHorasExtraDobles + @HorasExtraDobles
-        WHERE
-            (Id = @IdPlanillaSemanaEmpleado);
-
-        UPDATE
-            dbo.PlanillaMesEmpleado
-        SET
-            SalarioBrutoMensual = SalarioBrutoMensual + @TotalCredito
-            , SalarioNetoMensual = SalarioNetoMensual + @TotalCredito
-        WHERE
-            (Id = @IdPlanillaMesEmpleado);
-
-        EXEC dbo.spBitacora_RegistrarEvento
-            @inIdTipoEvento = 14
-            , @inIdUsuario = @inIdUsuario
-            , @inIP = @inIP
-            , @inParametros = @Parametros
-            , @inValoresAntes = NULL
-            , @inValoresDespues = NULL
-            , @outResultCode = @BitacoraResultCode OUTPUT;
-
-        COMMIT TRANSACTION;
-
-        SET @outResultCode = 0;
-    END TRY
-    BEGIN CATCH
-        IF (@@TRANCOUNT > 0)
-        BEGIN
-            ROLLBACK TRANSACTION;
-        END;
-
-        INSERT INTO dbo.DBError
-        (
-            UserName
-            , Number
-            , State
-            , Severity
-            , Line
-            , [Procedure]
-            , [Message]
-            , [DateTime]
-        )
-        VALUES
-        (
-            SUSER_SNAME()
-            , ERROR_NUMBER()
-            , ERROR_STATE()
-            , ERROR_SEVERITY()
-            , ERROR_LINE()
-            , ERROR_PROCEDURE()
-            , ERROR_MESSAGE()
-            , SYSDATETIME()
-        );
-
-        SET @outResultCode = 50008;
-    END CATCH;
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.spSim_CerrarSemana
-    @inIdUsuario INT
-    , @inIP NVARCHAR(45)
-    , @inFechaOperacion DATE
-    , @outResultCode INT OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SET @outResultCode = 50008;
-
-    DECLARE @IdSemanaPlanilla INT;
-    DECLARE @FechaFinSemana DATE;
-    DECLARE @IdMesPlanilla INT;
-    DECLARE @CantidadSemanas INT;
-    DECLARE @FechaFinMes DATE;
-    DECLARE @Empleados TABLE
-    (
-        RowNum INT NOT NULL PRIMARY KEY
-        , IdEmpleado INT NOT NULL
-        , IdPlanillaSemanaEmpleado INT NOT NULL
-        , SalarioBruto DECIMAL(14, 2) NOT NULL
-    );
-    DECLARE @RowNum INT;
-    DECLARE @MaxRowNum INT;
-    DECLARE @IdEmpleado INT;
-    DECLARE @IdPlanillaSemanaEmpleado INT;
-    DECLARE @SalarioBruto DECIMAL(14, 2);
-    DECLARE @Deducciones TABLE
-    (
-        RowNum INT NOT NULL PRIMARY KEY
-        , IdTipoDeduccion INT NOT NULL
-        , IdTipoMovimiento INT NOT NULL
-        , EsPorcentual BIT NOT NULL
-        , Porcentaje DECIMAL(12, 4) NULL
-        , Monto DECIMAL(14, 2) NOT NULL
-    );
-    DECLARE @TotalDeduccionesEmpleado DECIMAL(14, 2);
-    DECLARE @IdPlanillaMesEmpleado INT;
-    DECLARE @IdTipoDeduccion INT;
-    DECLARE @IdTipoMovimiento INT;
-    DECLARE @Porcentaje DECIMAL(12, 4);
-    DECLARE @MontoDeduccion DECIMAL(14, 2);
-    DECLARE @DedRowNum INT;
-    DECLARE @DedMaxRowNum INT;
-
-    BEGIN TRY
-        SELECT
-            @IdSemanaPlanilla = sp.Id
-            , @FechaFinSemana = sp.FechaFin
-            , @IdMesPlanilla = sp.IdMesPlanilla
-        FROM
-            dbo.SemanaPlanilla AS sp
-        WHERE
-            (sp.FechaInicio <= @inFechaOperacion)
-            AND (sp.FechaFin >= @inFechaOperacion);
-
-        IF (@IdSemanaPlanilla IS NULL)
+        IF (@IdSemanaPlanilla IS NULL) AND (@inEsDiaCierre = 0)
         BEGIN
             SET @outResultCode = 0;
 
             RETURN;
         END;
 
-        SELECT
-            @CantidadSemanas = mp.CantidadSemanas
-            , @FechaFinMes = mp.FechaFin
-        FROM
-            dbo.MesPlanilla AS mp
-        WHERE
-            (mp.Id = @IdMesPlanilla);
-
-        INSERT INTO @Empleados
+        ;WITH Marca AS
+        (
+            SELECT
+                ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS RowNum
+                , TRY_CONVERT(DATETIME2(0), T.c.value(N'@HoraEntrada', N'NVARCHAR(20)')) AS HoraEntrada
+                , TRY_CONVERT(DATETIME2(0), T.c.value(N'@HoraSalida', N'NVARCHAR(20)')) AS HoraSalida
+            FROM
+                @inXml.nodes(N'/Operaciones/FechaOperacion') AS FO (n)
+            CROSS APPLY
+                n.nodes(N'MarcaAsistencia') AS T (c)
+            WHERE
+                (FO.n.value(N'@Fecha', N'DATE') = @inFecha)
+                AND (
+                    T.c.value(N'@ValorDocumentoIdentidad', N'NVARCHAR(50)')
+                    = @inValorDocumentoIdentidad
+                )
+        )
+        , MarcaJornada AS
+        (
+            SELECT
+                mk.RowNum
+                , mk.HoraEntrada
+                , mk.HoraSalida
+                , jor.IdTipoJornada
+                , CASE
+                    WHEN (jor.IdTipoJornada IS NULL) THEN NULL
+                    ELSE
+                        DATEADD(
+                            DAY
+                            , CASE WHEN (jor.CruzaMedianoche = 1) THEN 1 ELSE 0 END
+                            , CAST(
+                                CONCAT(
+                                    CAST(CAST(mk.HoraEntrada AS DATE) AS NVARCHAR(10))
+                                    , N' '
+                                    , CAST(jor.HoraFin AS NVARCHAR(8))
+                                )
+                                AS DATETIME2(0)
+                            )
+                        )
+                  END AS FinJornada
+            FROM
+                Marca AS mk
+            OUTER APPLY
+            (
+                SELECT TOP (1)
+                    j.IdTipoJornada
+                    , tj.HoraFin
+                    , tj.CruzaMedianoche
+                FROM
+                    dbo.JornadaEmpleadoSemana AS j
+                INNER JOIN
+                    dbo.TipoJornada AS tj
+                    ON (tj.Id = j.IdTipoJornada)
+                WHERE
+                    (j.IdEmpleado = @inIdEmpleado)
+                    AND (
+                        j.FechaInicioSemana =
+                            DATEADD(
+                                DAY
+                                , -((DATEDIFF(DAY, '19000101', CAST(mk.HoraEntrada AS DATE)) % 7 + 3) % 7)
+                                , CAST(mk.HoraEntrada AS DATE)
+                            )
+                    )
+            ) AS jor
+        )
+        , MarcaCalc AS
+        (
+            SELECT
+                mj.RowNum
+                , mj.HoraEntrada
+                , mj.HoraSalida
+                , mj.IdTipoJornada
+                , mj.FinJornada
+                , CASE
+                    WHEN (mj.IdTipoJornada IS NULL) THEN 0
+                    ELSE
+                        CASE
+                            WHEN (
+                                DATEDIFF(
+                                    MINUTE
+                                    , mj.HoraEntrada
+                                    , CASE
+                                        WHEN (mj.HoraSalida < mj.FinJornada) THEN mj.HoraSalida
+                                        ELSE mj.FinJornada
+                                    END
+                                ) / 60 < 0
+                            ) THEN 0
+                            ELSE
+                                DATEDIFF(
+                                    MINUTE
+                                    , mj.HoraEntrada
+                                    , CASE
+                                        WHEN (mj.HoraSalida < mj.FinJornada) THEN mj.HoraSalida
+                                        ELSE mj.FinJornada
+                                    END
+                                ) / 60
+                        END
+                  END AS Ordinarias
+                , CASE
+                    WHEN (mj.IdTipoJornada IS NULL) THEN 0
+                    WHEN (mj.HoraSalida > mj.FinJornada) THEN
+                        DATEDIFF(MINUTE, mj.FinJornada, mj.HoraSalida) / 60
+                    ELSE 0
+                  END AS ExtraTotal
+            FROM
+                MarcaJornada AS mj
+        )
+        , Tally AS
+        (
+            SELECT TOP (1000)
+                ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1 AS n
+            FROM
+                sys.all_objects
+        )
+        , ExtraClasif AS
+        (
+            SELECT
+                mc.RowNum
+                , SUM(
+                    CASE
+                        WHEN (
+                            (DATEDIFF(DAY, '19000101', CAST(DATEADD(HOUR, t.n, mc.FinJornada) AS DATE)) % 7 = 6)
+                            OR EXISTS
+                            (
+                                SELECT 1
+                                FROM dbo.Feriado AS f
+                                WHERE (f.Fecha = CAST(DATEADD(HOUR, t.n, mc.FinJornada) AS DATE))
+                            )
+                        ) THEN 1
+                        ELSE 0
+                    END
+                  ) AS ExtraDobles
+                , SUM(
+                    CASE
+                        WHEN (
+                            (DATEDIFF(DAY, '19000101', CAST(DATEADD(HOUR, t.n, mc.FinJornada) AS DATE)) % 7 = 6)
+                            OR EXISTS
+                            (
+                                SELECT 1
+                                FROM dbo.Feriado AS f
+                                WHERE (f.Fecha = CAST(DATEADD(HOUR, t.n, mc.FinJornada) AS DATE))
+                            )
+                        ) THEN 0
+                        ELSE 1
+                    END
+                  ) AS ExtraNormales
+            FROM
+                MarcaCalc AS mc
+            INNER JOIN
+                Tally AS t
+                ON (t.n < mc.ExtraTotal)
+            GROUP BY
+                mc.RowNum
+        )
+        INSERT INTO @MarcaHoras
         (
             RowNum
-            , IdEmpleado
-            , IdPlanillaSemanaEmpleado
-            , SalarioBruto
+            , HoraEntrada
+            , HoraSalida
+            , TieneJornada
+            , Ordinarias
+            , ExtraNormales
+            , ExtraDobles
         )
         SELECT
-            ROW_NUMBER() OVER (ORDER BY pse.IdEmpleado ASC)
-            , pse.IdEmpleado
-            , pse.Id
-            , pse.SalarioBruto
+            mc.RowNum
+            , mc.HoraEntrada
+            , mc.HoraSalida
+            , CASE WHEN (mc.IdTipoJornada IS NULL) THEN 0 ELSE 1 END
+            , mc.Ordinarias
+            , ISNULL(ec.ExtraNormales, 0)
+            , ISNULL(ec.ExtraDobles, 0)
         FROM
-            dbo.PlanillaSemanaEmpleado AS pse
-        WHERE
-            (pse.IdSemanaPlanilla = @IdSemanaPlanilla);
+            MarcaCalc AS mc
+        LEFT JOIN
+            ExtraClasif AS ec
+            ON (ec.RowNum = mc.RowNum);
 
         SELECT
-            @MaxRowNum = MAX(e.RowNum)
+            @CantidadMarcas = COUNT(1)
         FROM
-            @Empleados AS e;
+            @MarcaHoras;
 
-        SET @RowNum = 1;
-
-        WHILE (@RowNum <= @MaxRowNum)
+        IF EXISTS
+        (
+            SELECT 1
+            FROM @MarcaHoras AS mh
+            WHERE (mh.TieneJornada = 0)
+        )
         BEGIN
-            SELECT
-                @IdEmpleado = e.IdEmpleado
-                , @IdPlanillaSemanaEmpleado = e.IdPlanillaSemanaEmpleado
-                , @SalarioBruto = e.SalarioBruto
-            FROM
-                @Empleados AS e
-            WHERE
-                (e.RowNum = @RowNum);
+            SET @outResultCode = 50017;
 
-            DELETE FROM @Deducciones;
+            RETURN;
+        END;
 
-            INSERT INTO @Deducciones
+        BEGIN TRANSACTION;
+
+        IF (@IdSemanaPlanilla IS NOT NULL)
+        BEGIN
+            IF NOT EXISTS
             (
-                RowNum
-                , IdTipoDeduccion
-                , IdTipoMovimiento
-                , EsPorcentual
-                , Porcentaje
-                , Monto
+                SELECT 1
+                FROM dbo.PlanillaSemanaEmpleado AS pse
+                WHERE (pse.IdSemanaPlanilla = @IdSemanaPlanilla)
+                  AND (pse.IdEmpleado = @inIdEmpleado)
             )
-            SELECT
-                ROW_NUMBER() OVER (ORDER BY td.Id ASC)
-                , td.Id
-                , td.IdTipoMovimiento
-                , td.EsPorcentual
-                , CASE
-                    WHEN (td.EsPorcentual = 1) THEN ed.PorcentajeOMonto
-                    ELSE NULL
-                END
-                , CASE
-                    WHEN (td.EsPorcentual = 1) THEN
-                        ROUND(ed.PorcentajeOMonto * @SalarioBruto, 2)
-                    ELSE
-                        ROUND(ed.PorcentajeOMonto / @CantidadSemanas, 2)
-                END
-            FROM
-                dbo.EmpleadoDeduccion AS ed
-            INNER JOIN
-                dbo.TipoDeduccion AS td
-                ON (td.Id = ed.IdTipoDeduccion)
-            WHERE
-                (ed.IdEmpleado = @IdEmpleado)
-                AND (ed.EsActivo = 1)
-                AND (ed.FechaInicioVigencia <= @FechaFinSemana)
-                AND (
-                    (ed.FechaFinVigencia IS NULL)
-                    OR (ed.FechaFinVigencia >= @FechaFinSemana)
-                );
-
-            SELECT
-                @TotalDeduccionesEmpleado = ISNULL(SUM(d.Monto), 0)
-            FROM
-                @Deducciones AS d;
-
-            BEGIN TRANSACTION;
-
-            SET @DedRowNum = 1;
-
-            SELECT
-                @DedMaxRowNum = MAX(d.RowNum)
-            FROM
-                @Deducciones AS d;
-
-            WHILE (@DedRowNum <= ISNULL(@DedMaxRowNum, 0))
             BEGIN
-                SELECT
-                    @IdTipoDeduccion = d.IdTipoDeduccion
-                    , @IdTipoMovimiento = d.IdTipoMovimiento
-                    , @Porcentaje = d.Porcentaje
-                    , @MontoDeduccion = d.Monto
-                FROM
-                    @Deducciones AS d
-                WHERE
-                    (d.RowNum = @DedRowNum);
-
-                INSERT INTO dbo.Movimiento
+                INSERT INTO dbo.PlanillaSemanaEmpleado
                 (
-                    IdEmpleado
-                    , IdPlanillaSemanaEmpleado
-                    , IdTipoMovimiento
-                    , IdTipoDeduccion
-                    , Fecha
-                    , CantidadHoras
-                    , Monto
-                    , IdPostByUser
-                    , PostInIP
+                    IdSemanaPlanilla
+                    , IdEmpleado
+                    , SalarioBruto
+                    , TotalDeducciones
+                    , SalarioNeto
+                    , CantidadHorasOrdinarias
+                    , CantidadHorasExtraNormales
+                    , CantidadHorasExtraDobles
                 )
                 VALUES
                 (
-                    @IdEmpleado
-                    , @IdPlanillaSemanaEmpleado
-                    , @IdTipoMovimiento
-                    , @IdTipoDeduccion
-                    , @inFechaOperacion
-                    , NULL
-                    , @MontoDeduccion
-                    , @inIdUsuario
-                    , @inIP
+                    @IdSemanaPlanilla
+                    , @inIdEmpleado
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
                 );
-
-                SET @DedRowNum = @DedRowNum + 1;
             END;
 
-            UPDATE
-                dbo.PlanillaSemanaEmpleado
-            SET
-                TotalDeducciones = TotalDeducciones + @TotalDeduccionesEmpleado
-                , SalarioNeto = SalarioBruto - (TotalDeducciones + @TotalDeduccionesEmpleado)
+            SELECT
+                @IdPlanillaSemanaEmpleado = pse.Id
+            FROM
+                dbo.PlanillaSemanaEmpleado AS pse
             WHERE
-                (Id = @IdPlanillaSemanaEmpleado);
+                (pse.IdSemanaPlanilla = @IdSemanaPlanilla)
+                AND (pse.IdEmpleado = @inIdEmpleado);
 
             IF NOT EXISTS
             (
-                SELECT
-                    1
-                FROM
-                    dbo.PlanillaMesEmpleado AS pme
-                WHERE
-                    (pme.IdMesPlanilla = @IdMesPlanilla)
-                    AND (pme.IdEmpleado = @IdEmpleado)
+                SELECT 1
+                FROM dbo.PlanillaMesEmpleado AS pme
+                WHERE (pme.IdMesPlanilla = @IdMesPlanilla)
+                  AND (pme.IdEmpleado = @inIdEmpleado)
             )
             BEGIN
                 INSERT INTO dbo.PlanillaMesEmpleado
@@ -1518,7 +934,7 @@ BEGIN
                 VALUES
                 (
                     @IdMesPlanilla
-                    , @IdEmpleado
+                    , @inIdEmpleado
                     , 0
                     , 0
                     , 0
@@ -1531,92 +947,458 @@ BEGIN
                 dbo.PlanillaMesEmpleado AS pme
             WHERE
                 (pme.IdMesPlanilla = @IdMesPlanilla)
-                AND (pme.IdEmpleado = @IdEmpleado);
+                AND (pme.IdEmpleado = @inIdEmpleado);
+        END;
 
-            UPDATE
-                dbo.PlanillaMesEmpleado
-            SET
-                TotalDeduccionesMensual = TotalDeduccionesMensual + @TotalDeduccionesEmpleado
-                , SalarioNetoMensual =
-                    SalarioBrutoMensual - (TotalDeduccionesMensual + @TotalDeduccionesEmpleado)
+        IF (@IdPlanillaSemanaEmpleado IS NOT NULL)
+        BEGIN
+
+            INSERT INTO dbo.MarcaAsistencia
+            (
+                IdEmpleado
+                , Fecha
+                , HoraEntrada
+                , HoraSalida
+                , Procesada
+            )
+            SELECT
+                @inIdEmpleado
+                , CAST(mh.HoraEntrada AS DATE)
+                , mh.HoraEntrada
+                , mh.HoraSalida
+                , 1
+            FROM
+                @MarcaHoras AS mh;
+
+            ;WITH Agg AS
+            (
+                SELECT
+                    ISNULL(SUM(mh.Ordinarias), 0) AS Ord
+                    , ISNULL(SUM(mh.ExtraNormales), 0) AS ExN
+                    , ISNULL(SUM(mh.ExtraDobles), 0) AS ExD
+                FROM
+                    @MarcaHoras AS mh
+            )
+            INSERT INTO @MovDia
+            (
+                Fase
+                , IdTipoMovimiento
+                , IdTipoDeduccion
+                , CantidadHoras
+                , Monto
+                , Signo
+                , Porcentaje
+            )
+            SELECT 0, 1, NULL, a.Ord, a.Ord * @SalarioXHora, 1, NULL
+            FROM Agg AS a WHERE (a.Ord > 0)
+            UNION ALL
+            SELECT 0, 2, NULL, a.ExN, a.ExN * @SalarioXHora * 1.5, 1, NULL
+            FROM Agg AS a WHERE (a.ExN > 0)
+            UNION ALL
+            SELECT 0, 3, NULL, a.ExD, a.ExD * @SalarioXHora * 2.0, 1, NULL
+            FROM Agg AS a WHERE (a.ExD > 0);
+
+            SELECT
+                @SumCreditos = ISNULL(SUM(md.Monto), 0)
+            FROM
+                @MovDia AS md
             WHERE
-                (Id = @IdPlanillaMesEmpleado);
+                (md.Fase = 0);
 
-            SET @DedRowNum = 1;
+            SELECT
+                @SalarioBrutoSemana = pse.SalarioBruto
+                , @SaldoInicial = pse.SalarioNeto
+            FROM
+                dbo.PlanillaSemanaEmpleado AS pse
+            WHERE
+                (pse.Id = @IdPlanillaSemanaEmpleado);
 
-            WHILE (@DedRowNum <= ISNULL(@DedMaxRowNum, 0))
+            SET @SalarioBrutoSemana = ISNULL(@SalarioBrutoSemana, 0) + @SumCreditos;
+
+            IF (@inEsDiaCierre = 1)
             BEGIN
                 SELECT
-                    @IdTipoDeduccion = d.IdTipoDeduccion
-                    , @Porcentaje = d.Porcentaje
-                    , @MontoDeduccion = d.Monto
+                    @CantidadSemanas = mp.CantidadSemanas
                 FROM
-                    @Deducciones AS d
+                    dbo.MesPlanilla AS mp
                 WHERE
-                    (d.RowNum = @DedRowNum);
+                    (mp.Id = @IdMesPlanilla);
 
-                IF EXISTS
+                INSERT INTO @MovDia
                 (
-                    SELECT
-                        1
-                    FROM
-                        dbo.DeduccionEmpleadoMes AS dem
-                    WHERE
-                        (dem.IdPlanillaMesEmpleado = @IdPlanillaMesEmpleado)
-                        AND (dem.IdTipoDeduccion = @IdTipoDeduccion)
+                    Fase
+                    , IdTipoMovimiento
+                    , IdTipoDeduccion
+                    , CantidadHoras
+                    , Monto
+                    , Signo
+                    , Porcentaje
+                )
+                SELECT
+                    1
+                    , td.IdTipoMovimiento
+                    , td.Id
+                    , NULL
+                    , CASE
+                        WHEN (td.EsPorcentual = 1) THEN
+                            ROUND(ed.PorcentajeOMonto * @SalarioBrutoSemana, 2)
+                        ELSE
+                            ROUND(ed.PorcentajeOMonto / @CantidadSemanas, 2)
+                    END
+                    , -1
+                    , CASE
+                        WHEN (td.EsPorcentual = 1) THEN ed.PorcentajeOMonto
+                        ELSE NULL
+                    END
+                FROM
+                    dbo.EmpleadoDeduccion AS ed
+                INNER JOIN
+                    dbo.TipoDeduccion AS td
+                    ON (td.Id = ed.IdTipoDeduccion)
+                WHERE
+                    (ed.IdEmpleado = @inIdEmpleado)
+                    AND (ed.EsActivo = 1)
+                    AND (ed.FechaInicioVigencia <= @FinSemana)
+                    AND (
+                        (ed.FechaFinVigencia IS NULL)
+                        OR (ed.FechaFinVigencia >= @FinSemana)
+                    );
+            END;
+
+            SELECT
+                @SumDebitos = ISNULL(SUM(md.Monto), 0)
+            FROM
+                @MovDia AS md
+            WHERE
+                (md.Fase = 1);
+
+            IF EXISTS (SELECT 1 FROM @MovDia)
+            BEGIN
+                INSERT INTO dbo.Movimiento
+                (
+                    IdEmpleado
+                    , IdPlanillaSemanaEmpleado
+                    , IdTipoMovimiento
+                    , IdTipoDeduccion
+                    , Fecha
+                    , CantidadHoras
+                    , Monto
+                    , NuevoSaldo
+                    , IdPostByUser
+                    , PostInIP
+                )
+                SELECT
+                    @inIdEmpleado
+                    , @IdPlanillaSemanaEmpleado
+                    , md.IdTipoMovimiento
+                    , md.IdTipoDeduccion
+                    , @inFecha
+                    , md.CantidadHoras
+                    , md.Monto
+                    , @SaldoInicial
+                        + SUM(md.Signo * md.Monto) OVER
+                          (
+                              ORDER BY md.Fase, md.IdTipoMovimiento, ISNULL(md.IdTipoDeduccion, 0)
+                              ROWS UNBOUNDED PRECEDING
+                          )
+                    , @inIdUsuario
+                    , @inIP
+                FROM
+                    @MovDia AS md;
+
+                SELECT
+                    @HorasOrd = ISNULL(SUM(CASE WHEN (md.IdTipoMovimiento = 1) THEN md.CantidadHoras END), 0)
+                    , @HorasExtraN = ISNULL(SUM(CASE WHEN (md.IdTipoMovimiento = 2) THEN md.CantidadHoras END), 0)
+                    , @HorasExtraD = ISNULL(SUM(CASE WHEN (md.IdTipoMovimiento = 3) THEN md.CantidadHoras END), 0)
+                FROM
+                    @MovDia AS md
+                WHERE
+                    (md.Fase = 0);
+
+                UPDATE
+                    dbo.PlanillaSemanaEmpleado
+                SET
+                    SalarioBruto = SalarioBruto + @SumCreditos
+                    , TotalDeducciones = TotalDeducciones + @SumDebitos
+                    , SalarioNeto = @SaldoInicial + @SumCreditos - @SumDebitos
+                    , CantidadHorasOrdinarias = CantidadHorasOrdinarias + @HorasOrd
+                    , CantidadHorasExtraNormales = CantidadHorasExtraNormales + @HorasExtraN
+                    , CantidadHorasExtraDobles = CantidadHorasExtraDobles + @HorasExtraD
+                WHERE
+                    (Id = @IdPlanillaSemanaEmpleado);
+
+                UPDATE
+                    dbo.PlanillaMesEmpleado
+                SET
+                    SalarioBrutoMensual = SalarioBrutoMensual + @SumCreditos
+                    , TotalDeduccionesMensual = TotalDeduccionesMensual + @SumDebitos
+                    , SalarioNetoMensual =
+                        (SalarioBrutoMensual + @SumCreditos)
+                        - (TotalDeduccionesMensual + @SumDebitos)
+                WHERE
+                    (Id = @IdPlanillaMesEmpleado);
+            END;
+
+            IF (@inEsDiaCierre = 1)
+            BEGIN
+                UPDATE
+                    dem
+                SET
+                    MontoAcumulado = dem.MontoAcumulado + md.Monto
+                FROM
+                    dbo.DeduccionEmpleadoMes AS dem
+                INNER JOIN
+                    @MovDia AS md
+                    ON (md.Fase = 1)
+                    AND (md.IdTipoDeduccion = dem.IdTipoDeduccion)
+                WHERE
+                    (dem.IdPlanillaMesEmpleado = @IdPlanillaMesEmpleado);
+
+                INSERT INTO dbo.DeduccionEmpleadoMes
+                (
+                    IdPlanillaMesEmpleado
+                    , IdTipoDeduccion
+                    , MontoAcumulado
+                    , PorcentajeAplicado
+                )
+                SELECT
+                    @IdPlanillaMesEmpleado
+                    , md.IdTipoDeduccion
+                    , md.Monto
+                    , md.Porcentaje
+                FROM
+                    @MovDia AS md
+                WHERE
+                    (md.Fase = 1)
+                    AND NOT EXISTS
+                    (
+                        SELECT 1
+                        FROM dbo.DeduccionEmpleadoMes AS dem
+                        WHERE (dem.IdPlanillaMesEmpleado = @IdPlanillaMesEmpleado)
+                          AND (dem.IdTipoDeduccion = md.IdTipoDeduccion)
+                    );
+            END;
+
+            IF (@CantidadMarcas > 0)
+            BEGIN
+                SET @Parametros =
+                    N'{"idEmpleado":'
+                    + CAST(@inIdEmpleado AS NVARCHAR(20))
+                    + N',"fecha":"'
+                    + CONVERT(NVARCHAR(10), @inFecha, 120)
+                    + N'","marcas":'
+                    + CAST(@CantidadMarcas AS NVARCHAR(10))
+                    + N'}';
+
+                EXEC dbo.spBitacora_RegistrarEvento
+                    @inIdTipoEvento = 14
+                    , @inIdUsuario = @inIdUsuario
+                    , @inIP = @inIP
+                    , @inParametros = @Parametros
+                    , @inValoresAntes = NULL
+                    , @inValoresDespues = NULL
+                    , @outResultCode = @BitacoraResultCode OUTPUT;
+            END;
+        END;
+
+        IF (@inEsDiaCierre = 1)
+        BEGIN
+            SET @InicioSemanaSiguiente = DATEADD(DAY, 1, @FinSemana);
+            SET @FinSemanaSiguiente = DATEADD(DAY, 6, @InicioSemanaSiguiente);
+
+            IF (@inEsPrimerEmpleado = 1)
+            BEGIN
+
+                IF NOT EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.MesPlanilla AS mp
+                    WHERE (mp.FechaInicio <= @InicioSemanaSiguiente)
+                      AND (mp.FechaFin >= @InicioSemanaSiguiente)
                 )
                 BEGIN
-                    UPDATE
-                        dbo.DeduccionEmpleadoMes
-                    SET
-                        MontoAcumulado = MontoAcumulado + @MontoDeduccion
-                    WHERE
-                        (IdPlanillaMesEmpleado = @IdPlanillaMesEmpleado)
-                        AND (IdTipoDeduccion = @IdTipoDeduccion);
-                END
-                ELSE
-                BEGIN
-                    INSERT INTO dbo.DeduccionEmpleadoMes
+                    SET @EOM = EOMONTH(@InicioSemanaSiguiente);
+                    SET @DayIndexEOM = DATEDIFF(DAY, '19000101', @EOM) % 7;
+                    SET @FechaFinMesSig = DATEADD(DAY, -((@DayIndexEOM - 3 + 7) % 7), @EOM);
+
+                    IF (@FechaFinMesSig < @InicioSemanaSiguiente)
+                    BEGIN
+                        SET @EOM = EOMONTH(DATEADD(MONTH, 1, @InicioSemanaSiguiente));
+                        SET @DayIndexEOM = DATEDIFF(DAY, '19000101', @EOM) % 7;
+                        SET @FechaFinMesSig = DATEADD(DAY, -((@DayIndexEOM - 3 + 7) % 7), @EOM);
+                    END;
+
+                    SET @AnioMesSig = YEAR(@FechaFinMesSig);
+                    SET @MesMesSig = MONTH(@FechaFinMesSig);
+                    SET @CantidadSemanasMesSig =
+                        (DATEDIFF(DAY, @InicioSemanaSiguiente, @FechaFinMesSig) + 1) / 7;
+
+                    INSERT INTO dbo.MesPlanilla
                     (
-                        IdPlanillaMesEmpleado
-                        , IdTipoDeduccion
-                        , MontoAcumulado
-                        , PorcentajeAplicado
+                        Anio
+                        , Mes
+                        , FechaInicio
+                        , FechaFin
+                        , CantidadSemanas
                     )
                     VALUES
                     (
-                        @IdPlanillaMesEmpleado
-                        , @IdTipoDeduccion
-                        , @MontoDeduccion
-                        , @Porcentaje
+                        @AnioMesSig
+                        , @MesMesSig
+                        , @InicioSemanaSiguiente
+                        , @FechaFinMesSig
+                        , @CantidadSemanasMesSig
                     );
                 END;
 
-                SET @DedRowNum = @DedRowNum + 1;
+                IF NOT EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.SemanaPlanilla AS sp
+                    WHERE (sp.FechaInicio = @InicioSemanaSiguiente)
+                )
+                BEGIN
+                    SELECT
+                        @IdMesPlanillaSiguiente = mp.Id
+                    FROM
+                        dbo.MesPlanilla AS mp
+                    WHERE
+                        (mp.FechaInicio <= @InicioSemanaSiguiente)
+                        AND (mp.FechaFin >= @InicioSemanaSiguiente);
+
+                    SELECT
+                        @NumeroSemanaSiguiente = COUNT(1) + 1
+                    FROM
+                        dbo.SemanaPlanilla AS sp
+                    WHERE
+                        (sp.IdMesPlanilla = @IdMesPlanillaSiguiente);
+
+                    INSERT INTO dbo.SemanaPlanilla
+                    (
+                        IdMesPlanilla
+                        , NumeroSemana
+                        , FechaInicio
+                        , FechaFin
+                    )
+                    VALUES
+                    (
+                        @IdMesPlanillaSiguiente
+                        , @NumeroSemanaSiguiente
+                        , @InicioSemanaSiguiente
+                        , @FinSemanaSiguiente
+                    );
+                END;
             END;
 
-            COMMIT TRANSACTION;
-
-            SET @RowNum = @RowNum + 1;
-        END;
-
-        BEGIN TRANSACTION;
-
-        UPDATE
-            dbo.SemanaPlanilla
-        SET
-            EstaCerrada = 1
-        WHERE
-            (Id = @IdSemanaPlanilla);
-
-        IF (@FechaFinSemana = @FechaFinMes)
-        BEGIN
-            UPDATE
-                dbo.MesPlanilla
-            SET
-                EstaCerrado = 1
+            SELECT
+                @IdSemanaPlanillaSiguiente = sp.Id
+                , @IdMesPlanillaSiguiente = sp.IdMesPlanilla
+            FROM
+                dbo.SemanaPlanilla AS sp
             WHERE
-                (Id = @IdMesPlanilla);
+                (sp.FechaInicio = @InicioSemanaSiguiente);
+
+            IF (@IdSemanaPlanillaSiguiente IS NOT NULL)
+                AND NOT EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.PlanillaSemanaEmpleado AS pse
+                    WHERE (pse.IdSemanaPlanilla = @IdSemanaPlanillaSiguiente)
+                      AND (pse.IdEmpleado = @inIdEmpleado)
+                )
+            BEGIN
+                INSERT INTO dbo.PlanillaSemanaEmpleado
+                (
+                    IdSemanaPlanilla
+                    , IdEmpleado
+                    , SalarioBruto
+                    , TotalDeducciones
+                    , SalarioNeto
+                    , CantidadHorasOrdinarias
+                    , CantidadHorasExtraNormales
+                    , CantidadHorasExtraDobles
+                )
+                VALUES
+                (
+                    @IdSemanaPlanillaSiguiente
+                    , @inIdEmpleado
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                    , 0
+                );
+            END;
+
+            IF (@IdMesPlanillaSiguiente IS NOT NULL)
+                AND (@IdMesPlanillaSiguiente <> ISNULL(@IdMesPlanilla, -1))
+            BEGIN
+                IF NOT EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.PlanillaMesEmpleado AS pme
+                    WHERE (pme.IdMesPlanilla = @IdMesPlanillaSiguiente)
+                      AND (pme.IdEmpleado = @inIdEmpleado)
+                )
+                BEGIN
+                    INSERT INTO dbo.PlanillaMesEmpleado
+                    (
+                        IdMesPlanilla
+                        , IdEmpleado
+                        , SalarioBrutoMensual
+                        , TotalDeduccionesMensual
+                        , SalarioNetoMensual
+                    )
+                    VALUES
+                    (
+                        @IdMesPlanillaSiguiente
+                        , @inIdEmpleado
+                        , 0
+                        , 0
+                        , 0
+                    );
+                END;
+
+                SELECT
+                    @IdPlanillaMesEmpleadoSiguiente = pme.Id
+                FROM
+                    dbo.PlanillaMesEmpleado AS pme
+                WHERE
+                    (pme.IdMesPlanilla = @IdMesPlanillaSiguiente)
+                    AND (pme.IdEmpleado = @inIdEmpleado);
+
+                INSERT INTO dbo.DeduccionEmpleadoMes
+                (
+                    IdPlanillaMesEmpleado
+                    , IdTipoDeduccion
+                    , MontoAcumulado
+                    , PorcentajeAplicado
+                )
+                SELECT
+                    @IdPlanillaMesEmpleadoSiguiente
+                    , td.Id
+                    , 0
+                    , CASE
+                        WHEN (td.EsPorcentual = 1) THEN ed.PorcentajeOMonto
+                        ELSE NULL
+                    END
+                FROM
+                    dbo.EmpleadoDeduccion AS ed
+                INNER JOIN
+                    dbo.TipoDeduccion AS td
+                    ON (td.Id = ed.IdTipoDeduccion)
+                WHERE
+                    (ed.IdEmpleado = @inIdEmpleado)
+                    AND (ed.EsActivo = 1)
+                    AND NOT EXISTS
+                    (
+                        SELECT 1
+                        FROM dbo.DeduccionEmpleadoMes AS dem
+                        WHERE (dem.IdPlanillaMesEmpleado = @IdPlanillaMesEmpleadoSiguiente)
+                          AND (dem.IdTipoDeduccion = td.Id)
+                    );
+            END;
         END;
 
         COMMIT TRANSACTION;
@@ -1704,21 +1486,6 @@ BEGIN
         , HoraSalidaStr NVARCHAR(20) NOT NULL
         , HoraEntrada DATETIME2(0) NULL
         , HoraSalida DATETIME2(0) NULL
-        , FechaSalida DATE NULL
-    );
-    DECLARE @MarcasPasoE TABLE
-    (
-        RowNum INT NOT NULL PRIMARY KEY
-        , ValorDocumentoIdentidad NVARCHAR(50) NOT NULL
-        , HoraEntrada DATETIME2(0) NOT NULL
-        , HoraSalida DATETIME2(0) NOT NULL
-    );
-    DECLARE @MarcasPasoG TABLE
-    (
-        RowNum INT NOT NULL PRIMARY KEY
-        , ValorDocumentoIdentidad NVARCHAR(50) NOT NULL
-        , HoraEntrada DATETIME2(0) NOT NULL
-        , HoraSalida DATETIME2(0) NOT NULL
     );
     DECLARE @AsignarJornada TABLE
     (
@@ -1727,9 +1494,18 @@ BEGIN
         , Jornada NVARCHAR(50) NOT NULL
         , InicioSemana DATE NOT NULL
     );
+    DECLARE @EmpleadosProcesar TABLE
+    (
+        RowNum INT NOT NULL PRIMARY KEY
+        , IdEmpleado INT NOT NULL
+        , ValorDocumentoIdentidad NVARCHAR(50) NOT NULL
+    );
+
     DECLARE @InicioSemanaActual DATE;
     DECLARE @FinSemanaActual DATE;
     DECLARE @DayIndex INT;
+    DECLARE @EsDiaCierre BIT;
+    DECLARE @EsPrimerEmpleado BIT;
     DECLARE @RowNum INT;
     DECLARE @MaxRowNum INT;
     DECLARE @ValorDocumentoIdentidad NVARCHAR(50);
@@ -1741,10 +1517,7 @@ BEGIN
     DECLARE @MontoFijo DECIMAL(12, 4);
     DECLARE @Jornada NVARCHAR(50);
     DECLARE @InicioSemana DATE;
-    DECLARE @HoraEntradaStr NVARCHAR(20);
-    DECLARE @HoraSalidaStr NVARCHAR(20);
-    DECLARE @HoraEntrada DATETIME2(0);
-    DECLARE @HoraSalida DATETIME2(0);
+    DECLARE @IdEmpleado INT;
     DECLARE @ChildResultCode INT;
 
     BEGIN TRY
@@ -1860,20 +1633,11 @@ BEGIN
         WHERE
             (FO.n.value(N'@Fecha', N'DATE') = @inFecha);
 
-        SET @InicioSemanaActual =
-            DATEADD(
-                DAY
-                , -((DATEDIFF(DAY, '19000101', @inFecha) % 7 + 3) % 7)
-                , @inFecha
-            );
-        SET @FinSemanaActual = DATEADD(DAY, 6, @InicioSemanaActual);
-
         UPDATE
             ma
         SET
             HoraEntrada = TRY_CONVERT(DATETIME2(0), ma.HoraEntradaStr)
             , HoraSalida = TRY_CONVERT(DATETIME2(0), ma.HoraSalidaStr)
-            , FechaSalida = CAST(TRY_CONVERT(DATETIME2(0), ma.HoraSalidaStr) AS DATE)
         FROM
             @MarcaAsistencia AS ma;
 
@@ -1892,40 +1656,6 @@ BEGIN
 
             RETURN;
         END;
-
-        INSERT INTO @MarcasPasoE
-        (
-            RowNum
-            , ValorDocumentoIdentidad
-            , HoraEntrada
-            , HoraSalida
-        )
-        SELECT
-            ROW_NUMBER() OVER (ORDER BY ma.RowNum ASC)
-            , ma.ValorDocumentoIdentidad
-            , ma.HoraEntrada
-            , ma.HoraSalida
-        FROM
-            @MarcaAsistencia AS ma
-        WHERE
-            (ma.FechaSalida <= @FinSemanaActual);
-
-        INSERT INTO @MarcasPasoG
-        (
-            RowNum
-            , ValorDocumentoIdentidad
-            , HoraEntrada
-            , HoraSalida
-        )
-        SELECT
-            ROW_NUMBER() OVER (ORDER BY ma.RowNum ASC)
-            , ma.ValorDocumentoIdentidad
-            , ma.HoraEntrada
-            , ma.HoraSalida
-        FROM
-            @MarcaAsistencia AS ma
-        WHERE
-            (ma.FechaSalida > @FinSemanaActual);
 
         SET @RowNum = 1;
 
@@ -2045,86 +1775,101 @@ BEGIN
             SET @RowNum = @RowNum + 1;
         END;
 
-        SET @RowNum = 1;
-
-        SELECT
-            @MaxRowNum = MAX(ma.RowNum)
-        FROM
-            @MarcasPasoE AS ma;
-
-        WHILE (@RowNum <= ISNULL(@MaxRowNum, 0))
-        BEGIN
-            SELECT
-                @ValorDocumentoIdentidad = ma.ValorDocumentoIdentidad
-                , @HoraEntrada = ma.HoraEntrada
-                , @HoraSalida = ma.HoraSalida
-            FROM
-                @MarcasPasoE AS ma
-            WHERE
-                (ma.RowNum = @RowNum);
-
-            EXEC dbo.spSim_ProcesarMarca
-                @inIdUsuario = @inIdUsuario
-                , @inIP = @inIP
-                , @inValorDocumentoIdentidad = @ValorDocumentoIdentidad
-                , @inHoraEntrada = @HoraEntrada
-                , @inHoraSalida = @HoraSalida
-                , @outResultCode = @ChildResultCode OUTPUT;
-
-            SET @RowNum = @RowNum + 1;
-        END;
-
         SET @DayIndex = DATEDIFF(DAY, '19000101', @inFecha) % 7;
+        SET @EsDiaCierre =
+            CASE
+                WHEN (@DayIndex = 3) THEN 1
+                ELSE 0
+            END;
 
-        IF (@DayIndex = 3)
-        BEGIN
-            EXEC dbo.spSim_CerrarSemana
-                @inIdUsuario = @inIdUsuario
-                , @inIP = @inIP
-                , @inFechaOperacion = @inFecha
-                , @outResultCode = @ChildResultCode OUTPUT;
+        SET @InicioSemanaActual =
+            DATEADD(
+                DAY
+                , -((DATEDIFF(DAY, '19000101', @inFecha) % 7 + 3) % 7)
+                , @inFecha
+            );
+        SET @FinSemanaActual = DATEADD(DAY, 6, @InicioSemanaActual);
 
-            EXEC dbo.spSim_AbrirMes
-                @inIdUsuario = @inIdUsuario
-                , @inIP = @inIP
-                , @inFechaOperacion = @inFecha
-                , @outResultCode = @ChildResultCode OUTPUT;
-
-            EXEC dbo.spSim_AbrirSemana
-                @inIdUsuario = @inIdUsuario
-                , @inIP = @inIP
-                , @inFechaOperacion = @inFecha
-                , @outResultCode = @ChildResultCode OUTPUT;
-
-        END;
+        INSERT INTO @EmpleadosProcesar
+        (
+            RowNum
+            , IdEmpleado
+            , ValorDocumentoIdentidad
+        )
+        SELECT
+            ROW_NUMBER() OVER (ORDER BY e.Id ASC)
+            , e.Id
+            , e.ValorDocumentoIdentidad
+        FROM
+            dbo.Empleado AS e
+        WHERE
+            (e.EsActivo = 1)
+            AND (
+                (@EsDiaCierre = 1)
+                OR EXISTS
+                (
+                    SELECT
+                        1
+                    FROM
+                        @MarcaAsistencia AS ma
+                    WHERE
+                        (ma.ValorDocumentoIdentidad = e.ValorDocumentoIdentidad)
+                )
+            );
 
         SET @RowNum = 1;
 
         SELECT
-            @MaxRowNum = MAX(ma.RowNum)
+            @MaxRowNum = MAX(ep.RowNum)
         FROM
-            @MarcasPasoG AS ma;
+            @EmpleadosProcesar AS ep;
 
         WHILE (@RowNum <= ISNULL(@MaxRowNum, 0))
         BEGIN
             SELECT
-                @ValorDocumentoIdentidad = ma.ValorDocumentoIdentidad
-                , @HoraEntrada = ma.HoraEntrada
-                , @HoraSalida = ma.HoraSalida
+                @IdEmpleado = ep.IdEmpleado
+                , @ValorDocumentoIdentidad = ep.ValorDocumentoIdentidad
             FROM
-                @MarcasPasoG AS ma
+                @EmpleadosProcesar AS ep
             WHERE
-                (ma.RowNum = @RowNum);
+                (ep.RowNum = @RowNum);
 
-            EXEC dbo.spSim_ProcesarMarca
+            SET @EsPrimerEmpleado =
+                CASE
+                    WHEN (@RowNum = 1) THEN 1
+                    ELSE 0
+                END;
+
+            EXEC dbo.spSim_ProcesarEmpleadoDia
                 @inIdUsuario = @inIdUsuario
                 , @inIP = @inIP
+                , @inIdEmpleado = @IdEmpleado
                 , @inValorDocumentoIdentidad = @ValorDocumentoIdentidad
-                , @inHoraEntrada = @HoraEntrada
-                , @inHoraSalida = @HoraSalida
+                , @inXml = @inXml
+                , @inFecha = @inFecha
+                , @inEsDiaCierre = @EsDiaCierre
+                , @inEsPrimerEmpleado = @EsPrimerEmpleado
                 , @outResultCode = @ChildResultCode OUTPUT;
 
             SET @RowNum = @RowNum + 1;
+        END;
+
+        IF (@EsDiaCierre = 1)
+        BEGIN
+            UPDATE
+                dbo.SemanaPlanilla
+            SET
+                EstaCerrada = 1
+            WHERE
+                (FechaInicio <= @inFecha)
+                AND (FechaFin >= @inFecha);
+
+            UPDATE
+                dbo.MesPlanilla
+            SET
+                EstaCerrado = 1
+            WHERE
+                (FechaFin = @FinSemanaActual);
         END;
 
         SET @RowNum = 1;

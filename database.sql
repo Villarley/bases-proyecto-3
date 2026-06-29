@@ -408,6 +408,8 @@ CREATE TABLE dbo.Movimiento
     , Fecha DATE NOT NULL
     , CantidadHoras INT NULL
     , Monto DECIMAL(14, 2) NOT NULL
+    , NuevoSaldo DECIMAL(14, 2) NOT NULL
+        CONSTRAINT DF_Movimiento_NuevoSaldo DEFAULT (0)
     , IdPostByUser INT NULL
     , PostInIP NVARCHAR(45) NULL
     , PostTime DATETIME2(0) NOT NULL
